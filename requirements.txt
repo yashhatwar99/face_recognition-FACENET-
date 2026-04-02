@@ -1,0 +1,5 @@
+facenet-pytorch 
+opencv-python
+scikit-learn 
+pillow 
+numpy
