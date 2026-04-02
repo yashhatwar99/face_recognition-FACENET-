@@ -9,3 +9,4 @@ model = SVC(kernel='linear', probability=True)
 model.fit(X, y)
 
 pickle.dump(model, open("face_model.pkl", "wb"))
+

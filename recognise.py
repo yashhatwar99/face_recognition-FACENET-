@@ -49,7 +49,7 @@ while True:
             probs = model.predict_proba(embedding)
             max_prob = np.max(probs)
 
-            if max_prob < 0.6:
+            if max_prob < 0.7:
                 name = "Unknown"
             else:
                 name = model.predict(embedding)[0]
