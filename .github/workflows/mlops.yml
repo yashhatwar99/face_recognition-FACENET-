@@ -27,9 +27,9 @@ jobs:
 
     - name: Pull Dataset from Azure via DVC
       run: |
-        dvc remote modify --local myremote sas_token ${{ secrets.AZURE_SAS_TOKEN }}
+        dvc remote modify --local myremote sas_token "${{ secrets.AZURE_SAS_TOKEN }}"
         dvc pull
-
+  
     - name: Extract Facial Embeddings
       run: |
         # Updated path to the new folder
