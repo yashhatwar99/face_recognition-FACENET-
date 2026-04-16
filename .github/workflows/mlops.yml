@@ -85,3 +85,4 @@ jobs:
           docker stop face-api || true
           docker rm face-api || true
           docker run -d --name face-api -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/face-detection:latest
+    
