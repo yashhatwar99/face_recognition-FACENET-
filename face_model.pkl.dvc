@@ -1,0 +1,5 @@
+outs:
+- md5: a9259f6cd2f12e41754c6048524ce06b
+  size: 79594
+  hash: md5
+  path: face_model.pkl
