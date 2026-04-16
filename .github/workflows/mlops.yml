@@ -27,7 +27,13 @@ jobs:
 
     - name: Pull Dataset from Azure via DVC
       run: |
-        dvc remote modify --local myremote sas_token "${{ secrets.AZURE_SAS_TOKEN }}"
+        # Tell DVC the account name (not sensitive, so we hardcode it)
+        dvc remote modify --local myremote account_name "harsh23"
+        
+        # Inject the account key securely from your renamed secret
+        dvc remote modify --local myremote account_key "${{ secrets.AZURE_STORAGE_KEY }}"
+        
+        # Pull the data!
         dvc pull
   
     - name: Extract Facial Embeddings
