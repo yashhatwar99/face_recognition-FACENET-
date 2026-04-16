@@ -1,0 +1,297 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+.gitignore
+dataset/harsh/WIN_20260402_17_16_02_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_03_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_04_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_05_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_25_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_26_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_28_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_29_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_31_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_32_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_41_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_42_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_43_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_44_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_45_Pro (2).jpg
+dataset/harsh/WIN_20260402_17_16_45_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_46_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_47_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_48_Pro (2).jpg
+dataset/harsh/WIN_20260402_17_16_48_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_49_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_50_Pro.jpg
+dataset/harsh/WIN_20260402_17_16_51_Pro (2).jpg
+dataset/harsh/WIN_20260402_17_16_51_Pro.jpg
+dataset/keshav/WIN_20260402_00_39_56_Pro.jpg
+dataset/keshav/WIN_20260402_00_39_57_Pro.jpg
+dataset/keshav/WIN_20260402_00_39_58_Pro.jpg
+dataset/keshav/WIN_20260402_00_39_59_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_02_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_03_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_04_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_05_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_06_Pro.jpg
+dataset/keshav/WIN_20260402_00_40_07_Pro.jpg
+dataset/yash/WIN_20260401_23_58_28_Pro.jpg
+dataset/yash/WIN_20260401_23_58_29_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_29_Pro.jpg
+dataset/yash/WIN_20260401_23_58_30_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_30_Pro.jpg
+dataset/yash/WIN_20260401_23_58_31_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_31_Pro.jpg
+dataset/yash/WIN_20260401_23_58_32_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_32_Pro (3).jpg
+dataset/yash/WIN_20260401_23_58_32_Pro.jpg
+dataset/yash/WIN_20260401_23_58_33_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_33_Pro.jpg
+dataset/yash/WIN_20260401_23_58_34_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_34_Pro (3).jpg
+dataset/yash/WIN_20260401_23_58_34_Pro.jpg
+dataset/yash/WIN_20260401_23_58_35_Pro (2).jpg
+dataset/yash/WIN_20260401_23_58_35_Pro (3).jpg
+dataset/yash/WIN_20260401_23_58_35_Pro.jpg
+eval.py
+extract_embeddings.py
+README.md
+recognise.py
+requirements.txt
+train_model.py
+
+================================================================
+Files
+================================================================
+
+================
+File: .gitignore
+================
+venv/
+__pycache__/
+*.pyc
+*.npy
+*.pkl
+
+================
+File: eval.py
+================
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+X = np.load("embeddings.npy")
+y = np.load("labels.npy")
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+model2 = SVC(kernel='linear', probability=True)
+model2.fit(X_train, y_train)
+
+y_pred = model2.predict(X_test)
+
+acc = accuracy_score(y_test, y_pred)
+print("Test Accuracy:", acc)
+
+================
+File: extract_embeddings.py
+================
+from facenet_pytorch import InceptionResnetV1, MTCNN
+import torch
+import numpy as np
+import os
+from PIL import Image
+
+mtcnn = MTCNN(image_size=160)
+model = InceptionResnetV1(pretrained='vggface2').eval()
+
+dataset_path = "dataset"
+
+embeddings = []
+labels = []
+
+for person in os.listdir(dataset_path):
+    person_path = os.path.join(dataset_path, person)
+
+    for img_name in os.listdir(person_path):
+        img_path = os.path.join(person_path, img_name)
+        
+        img = Image.open(img_path).convert('RGB')
+        
+        face = mtcnn(img)
+        if face is None:
+            continue
+        
+        face = face.unsqueeze(0)
+        embedding = model(face).detach().numpy()[0]
+
+        embeddings.append(embedding)
+        labels.append(person)
+
+np.save("embeddings.npy", embeddings)
+np.save("labels.npy", labels)
+
+================
+File: README.md
+================
+*HERE we first use MTCNN to detect face from and image in dataset *
+then we resize it to 160*160 pixels
+
+after we get face pixels  we use FACENET to extract face embeddings( vectors ) from that photo
+
+
+for each photo we save an embedding (ex [0.99,0.23,.....] )in new line in the file "embeddings.npy"
+and for each embedding we store a label (name of person) in label.npy file
+
+
+
+then we use SVM model to learn embeddings and label
+
+================
+File: recognise.py
+================
+import cv2
+import torch
+import pickle
+import numpy as np
+from facenet_pytorch import InceptionResnetV1, MTCNN
+
+mtcnn = MTCNN(keep_all=True)
+facenet = InceptionResnetV1(pretrained='vggface2').eval()
+
+model = pickle.load(open("face_model.pkl", "rb"))
+
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    boxes, _ = mtcnn.detect(rgb)
+
+    if boxes is not None:
+        for box in boxes:
+            x1, y1, x2, y2 = map(int, box)
+
+            h, w, _ = rgb.shape
+
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(w, x2)
+            y2 = min(h, y2)
+
+            face = rgb[y1:y2, x1:x2]
+
+            if face.size == 0:
+                continue
+
+            face = cv2.resize(face, (160,160))
+            
+            face = torch.tensor(face).permute(2,0,1).float()/255
+            face = face.unsqueeze(0)
+
+            # embedding = facenet(face).detach().numpy()
+            with torch.no_grad():
+                embedding = facenet(face).numpy()
+
+            # name = model.predict(embedding)[0]
+            probs = model.predict_proba(embedding)
+            max_prob = np.max(probs)
+
+            if max_prob < 0.7:
+                name = "Unknown"
+            else:
+                name = model.predict(embedding)[0]
+
+            cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
+            cv2.putText(frame, name, (x1,y1-10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+    cv2.imshow("Face Recognition", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+================
+File: requirements.txt
+================
+facenet-pytorch 
+opencv-python
+scikit-learn 
+pillow 
+numpy
+
+================
+File: train_model.py
+================
+from sklearn.svm import SVC
+import numpy as np
+import pickle
+
+X = np.load("embeddings.npy")
+y = np.load("labels.npy")
+
+model = SVC(kernel='linear', probability=True)
+model.fit(X, y)
+
+pickle.dump(model, open("face_model.pkl", "wb"))
+
+
+
+
+
+================================================================
+End of Codebase
+================================================================

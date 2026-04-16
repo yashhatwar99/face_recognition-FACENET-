@@ -1,0 +1,41 @@
+name: Face Recognition CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Evaluation
+      run: |
+        python eval.py
+
+    - name: Train Production Model
+      if: success()
+      run: |
+        python train_model.py
+
+    - name: Upload Model Artifact
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: trained-face-model
+        path: face_model.pkl
