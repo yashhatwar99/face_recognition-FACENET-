@@ -71,7 +71,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-recognition:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-detection:latest
 
     - name: Deploy to Azure VM
       if: github.event_name == 'push'
@@ -81,7 +81,7 @@ jobs:
         username: ${{ secrets.AZURE_USER }}
         key: ${{ secrets.AZURE_KEY }}
         script: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-recognition:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-detection:latest
           docker stop face-api || true
           docker rm face-api || true
-          docker run -d --name face-api -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/face-recognition:latest
+          docker run -d --name face-api -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/face-detection:latest
