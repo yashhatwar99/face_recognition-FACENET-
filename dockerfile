@@ -16,6 +16,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the codebase
 COPY . .
 
-# Default command (can be overridden)
-# Replace the CMD line at the bottom of your Dockerfile with:
-CMD ["uvicorn", "server/main:app", "--host", "0.0.0.0", "--port", "6500"]
+CMD ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000"]
