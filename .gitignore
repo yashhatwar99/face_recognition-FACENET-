@@ -8,3 +8,7 @@ repomix-output.txt
 dataset/
 dataset
 repomix-output.xml
+dataset_bollywood/
+dataset_bollywood
+mlruns/
+mlflow.db
