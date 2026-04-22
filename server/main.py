@@ -8,6 +8,13 @@ from facenet_pytorch import InceptionResnetV1, MTCNN
 
 app = FastAPI(title="Face Recognition API")
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
+app = FastAPI(title="Face Recognition API")
+
+# Add these lines to instrument your app and expose the /metrics endpoint
+Instrumentator().instrument(app).expose(app)
+
 # Load models once when the server starts
 mtcnn = MTCNN(keep_all=True)
 facenet = InceptionResnetV1(pretrained='vggface2').eval()
