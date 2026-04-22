@@ -1,0 +1,8 @@
+to run prometheus use docker
+docker run -d -p 9090:9090 -v ${PWD}/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+
+to run fastapi
+uvicorn server.main:app --port 3000
+
+to check prometheus
+go to http://localhost:9090
