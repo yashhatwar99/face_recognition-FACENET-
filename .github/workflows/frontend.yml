@@ -1,0 +1,39 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [ main,test_branch ]
+    paths:
+      - 'frontend/**'
+      - 'Dockerfile.frontend'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: Dockerfile.frontend
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest
+
+    - name: Deploy to Azure
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.AZURE_HOST }}
+        username: ${{ secrets.AZURE_USER }}
+        key: ${{ secrets.AZURE_KEY }}
+        script: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest
+          docker stop face-frontend || true
+          docker rm face-frontend || true
+          docker run -d --name face-frontend -p 8501:8501 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest

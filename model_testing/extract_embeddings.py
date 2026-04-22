@@ -7,7 +7,7 @@ from PIL import Image
 mtcnn = MTCNN(image_size=160)
 model = InceptionResnetV1(pretrained='vggface2').eval()
 
-dataset_path = "dataset_bollywood"  # Update this to your dataset path
+dataset_path = "dataset" # Update this to your dataset path
 
 embeddings = []
 labels = []

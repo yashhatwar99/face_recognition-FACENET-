@@ -5,9 +5,6 @@ import numpy as np
 import torch
 import pickle
 from facenet_pytorch import InceptionResnetV1, MTCNN
-
-app = FastAPI(title="Face Recognition API")
-
 from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="Face Recognition API")
