@@ -41,6 +41,7 @@ with mlflow.start_run(run_name="Dataset2_training"):
     # --- NEW: SAVE THE MODEL LOCALLY FOR GITHUB ACTIONS ---
     with open("face_model.pkl", "wb") as f:
         pickle.dump(model, f)
+        print("pickle save done")
     # ------------------------------------------------------
     
     print(f"Model trained with an accuracy of {acc:.4f} and logged to MLflow Registry!")
