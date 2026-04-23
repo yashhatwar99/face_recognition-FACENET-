@@ -1,0 +1,10 @@
+facenet-pytorch 
+opencv-python
+scikit-learn 
+pillow 
+numpy
+fastapi
+uvicorn
+python-multipart
+mlflow
+prometheus-fastapi-instrumentator
