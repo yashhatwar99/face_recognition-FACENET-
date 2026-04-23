@@ -16,6 +16,7 @@ from facenet_pytorch import InceptionResnetV1, MTCNN
 from prometheus_fastapi_instrumentator import Instrumentator
 from evidently.report import Report
 from evidently.metrics import EmbeddingsDriftMetric
+from prometheus_client import Gauge
 
 # 1. Define the Prometheus Gauge
 DRIFT_SCORE_GAUGE = Gauge(
@@ -60,7 +61,7 @@ def calculate_drift():
     print(f"Prometheus Gauge Updated: {score}")
 
 @app.post("/predict")
-async def predict_face(file: UploadFile = File(...)):
+async def predict_face(file: UploadFile = File(...),background_tasks: BackgroundTasks = BackgroundTasks()):
 # ... (KEEP THE REST OF YOUR PREDICT FUNCTION EXACTLY THE SAME) ...
     if model is None:
         return {"error": "SVM model not trained yet."}
