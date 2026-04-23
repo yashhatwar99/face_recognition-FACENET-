@@ -12,3 +12,5 @@ dataset_bollywood/
 dataset_bollywood
 mlruns/
 mlflow.db
+aws_ssh.sh
+
