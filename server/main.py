@@ -9,10 +9,11 @@ cv2.setNumThreads(0) # Force OpenCV to stop fighting PyTorch for threads
 # 3. Import everything else
 import numpy as np
 import pickle
+import time
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
 from facenet_pytorch import InceptionResnetV1, MTCNN
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Gauge, Counter
+from prometheus_client import Gauge, Counter, Histogram
 
 # --- 1. PROMETHEUS METRICS DEFINITIONS ---
 DRIFT_SCORE_GAUGE = Gauge(
@@ -27,6 +28,31 @@ MODEL_ACCURACY_GAUGE = Gauge(
     "model_accuracy", 
     "Rolling model prediction accuracy based on provided ground truth"
 )
+ACCURACY_EVALUATED_TOTAL = Gauge(
+    "model_accuracy_evaluated_total",
+    "Number of predictions evaluated for model_accuracy (ground truth provided)"
+)
+ACCURACY_CORRECT_TOTAL = Gauge(
+    "model_accuracy_correct_total",
+    "Number of correct predictions counted in model_accuracy"
+)
+PREDICTION_LATENCY_SECONDS = Histogram(
+    "prediction_latency_seconds",
+    "Time spent in /predict endpoint",
+    buckets=(0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1, 1.5, 2.5, 5, 10)
+)
+UNKNOWN_PREDICTIONS_TOTAL = Counter(
+    "unknown_predictions_total",
+    "Total predictions classified as Unknown (primary face)"
+)
+AVG_PRIMARY_CONFIDENCE = Gauge(
+    "avg_primary_confidence",
+    "Rolling average confidence for the primary detected face"
+)
+LIVE_EMBEDDINGS_CACHE_SIZE = Gauge(
+    "live_embeddings_cache_size",
+    "Number of embeddings currently cached for drift calculation"
+)
 
 app = FastAPI(title="Face Recognition API")
 Instrumentator().instrument(app).expose(app)
@@ -35,6 +61,8 @@ Instrumentator().instrument(app).expose(app)
 live_embeddings_cache = []
 correct_predictions = 0
 total_evaluated = 0
+primary_conf_sum = 0.0
+primary_conf_count = 0
 
 try:
     REFERENCE_DATA = np.load("embeddings.npy") # Your 80-celeb baseline
@@ -71,10 +99,12 @@ def calculate_drift():
         drift_score = 1.0 - cos_sim
         
         DRIFT_SCORE_GAUGE.set(float(drift_score))
+        LIVE_EMBEDDINGS_CACHE_SIZE.set(len(live_embeddings_cache))
         print(f"Prometheus Gauge Updated (Cosine Distance): {drift_score:.4f}")
 
         if len(live_embeddings_cache) > 1000:
             live_embeddings_cache = live_embeddings_cache[-500:]
+            LIVE_EMBEDDINGS_CACHE_SIZE.set(len(live_embeddings_cache))
 
     except Exception as e:
         print(f"Error calculating drift: {e}")
@@ -86,10 +116,11 @@ async def predict_face(
     file: UploadFile = File(...),
     actual_name: str = Form(None) # Optional ground truth to track model accuracy
 ):
-    global correct_predictions, total_evaluated
+    global correct_predictions, total_evaluated, primary_conf_sum, primary_conf_count
     
     # Increment total API requests
     API_REQUESTS_TOTAL.inc()
+    start_t = time.perf_counter()
 
     if model is None:
         return {"error": "SVM model not trained yet."}
@@ -102,6 +133,7 @@ async def predict_face(
     boxes, _ = mtcnn.detect(rgb)
     results = []
     primary_prediction = "Unknown"
+    primary_confidence = None
 
     if boxes is not None:
         for box in boxes:
@@ -121,15 +153,17 @@ async def predict_face(
             with torch.no_grad():
                 embedding = facenet(face_tensor).numpy()
                 live_embeddings_cache.append(embedding.flatten())
+                LIVE_EMBEDDINGS_CACHE_SIZE.set(len(live_embeddings_cache))
 
             probs = model.predict_proba(embedding)
             max_prob = np.max(probs)
             
-            # Reverted threshold to 0.15
+            # Using your original 0.15 threshold
             name = model.predict(embedding)[0] if max_prob >= 0.15 else "Unknown"
 
             if not results: 
                 primary_prediction = name
+                primary_confidence = float(max_prob)
 
             results.append({"name": name, "confidence": float(max_prob), "bounding_box": [x1, y1, x2, y2]})
 
@@ -141,8 +175,19 @@ async def predict_face(
         
         current_accuracy = correct_predictions / total_evaluated
         MODEL_ACCURACY_GAUGE.set(current_accuracy)
+        ACCURACY_EVALUATED_TOTAL.set(total_evaluated)
+        ACCURACY_CORRECT_TOTAL.set(correct_predictions)
 
     background_tasks.add_task(calculate_drift)
+    PREDICTION_LATENCY_SECONDS.observe(time.perf_counter() - start_t)
+
+    if primary_prediction == "Unknown":
+        UNKNOWN_PREDICTIONS_TOTAL.inc()
+
+    if primary_confidence is not None:
+        primary_conf_sum += primary_confidence
+        primary_conf_count += 1
+        AVG_PRIMARY_CONFIDENCE.set(primary_conf_sum / primary_conf_count)
     
     # Returning faces_detected alongside results so the frontend won't crash
     return {"faces_detected": len(results), "results": results}
