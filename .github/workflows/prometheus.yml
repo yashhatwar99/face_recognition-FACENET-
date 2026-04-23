@@ -6,7 +6,7 @@ on:
     paths:
       - 'prometheus.yml'
       - 'Dockerfile.prometheus'
-
+  workflow_dispatch:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
