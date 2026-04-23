@@ -9,22 +9,32 @@ cv2.setNumThreads(0) # Force OpenCV to stop fighting PyTorch for threads
 # 3. Import everything else
 import numpy as np
 import pickle
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
 from facenet_pytorch import InceptionResnetV1, MTCNN
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Gauge
+from prometheus_client import Gauge, Counter
 
-# 1. Define the Prometheus Gauge
+# --- 1. PROMETHEUS METRICS DEFINITIONS ---
 DRIFT_SCORE_GAUGE = Gauge(
     "model_data_drift_score", 
     "Cosine distance drift score between training and production embeddings"
+)
+API_REQUESTS_TOTAL = Counter(
+    "num_api_requests", 
+    "Total number of prediction API requests received"
+)
+MODEL_ACCURACY_GAUGE = Gauge(
+    "model_accuracy", 
+    "Rolling model prediction accuracy based on provided ground truth"
 )
 
 app = FastAPI(title="Face Recognition API")
 Instrumentator().instrument(app).expose(app)
 
-# Global list to store live embeddings for drift calculation
+# --- 2. GLOBAL VARIABLES ---
 live_embeddings_cache = []
+correct_predictions = 0
+total_evaluated = 0
 
 try:
     REFERENCE_DATA = np.load("embeddings.npy") # Your 80-celeb baseline
@@ -42,7 +52,7 @@ try:
 except Exception:
     model = None
 
-# 2. Background function to calculate drift using Numpy (Cosine Distance)
+# --- 3. BACKGROUND DRIFT CALCULATION ---
 def calculate_drift():
     global live_embeddings_cache
     
@@ -51,10 +61,7 @@ def calculate_drift():
         return
     
     try:
-        # Convert live cache to numpy array
         curr_arr = np.array(live_embeddings_cache)
-        
-        # Calculate the centroid (mean vector) of the live production faces
         curr_centroid = np.mean(curr_arr, axis=0)
         
         # Calculate Cosine Similarity: dot(A, B) / (norm(A) * norm(B))
@@ -63,23 +70,27 @@ def calculate_drift():
         # Convert similarity to distance (0 means identical distributions, higher means drift)
         drift_score = 1.0 - cos_sim
         
-        # Update Prometheus
         DRIFT_SCORE_GAUGE.set(float(drift_score))
         print(f"Prometheus Gauge Updated (Cosine Distance): {drift_score:.4f}")
 
-        # Optional: Prevent the cache from eating all your server RAM over time
         if len(live_embeddings_cache) > 1000:
-            # Keep only the 500 most recent faces
             live_embeddings_cache = live_embeddings_cache[-500:]
 
     except Exception as e:
         print(f"Error calculating drift: {e}")
 
+# --- 4. PREDICTION ENDPOINT ---
 @app.post("/predict")
 async def predict_face(
     background_tasks: BackgroundTasks, 
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    actual_name: str = Form(None) # Optional ground truth to track model accuracy
 ):
+    global correct_predictions, total_evaluated
+    
+    # Increment total API requests
+    API_REQUESTS_TOTAL.inc()
+
     if model is None:
         return {"error": "SVM model not trained yet."}
 
@@ -90,12 +101,12 @@ async def predict_face(
 
     boxes, _ = mtcnn.detect(rgb)
     results = []
+    primary_prediction = "Unknown"
 
     if boxes is not None:
         for box in boxes:
             x1, y1, x2, y2 = map(int, box)
             
-            # Boundary checks
             h, w, _ = rgb.shape
             x1, y1 = max(0, x1), max(0, y1)
             x2, y2 = min(w, x2), min(h, y2)
@@ -109,16 +120,29 @@ async def predict_face(
 
             with torch.no_grad():
                 embedding = facenet(face_tensor).numpy()
-                # 3. Add to cache for drift detection
                 live_embeddings_cache.append(embedding.flatten())
 
             probs = model.predict_proba(embedding)
             max_prob = np.max(probs)
-            name = model.predict(embedding)[0] if max_prob >= 0.7 else "Unknown"
+            
+            # Reverted threshold to 0.2
+            name = model.predict(embedding)[0] if max_prob >= 0.2 else "Unknown"
 
-            results.append({"name": name, "confidence": float(max_prob)})
+            if not results: 
+                primary_prediction = name
 
-    # Trigger drift update in the background
+            results.append({"name": name, "confidence": float(max_prob), "bounding_box": [x1, y1, x2, y2]})
+
+    # --- 5. TRACK MODEL ACCURACY ---
+    if actual_name is not None and results:
+        total_evaluated += 1
+        if primary_prediction.lower() == actual_name.lower():
+            correct_predictions += 1
+        
+        current_accuracy = correct_predictions / total_evaluated
+        MODEL_ACCURACY_GAUGE.set(current_accuracy)
+
     background_tasks.add_task(calculate_drift)
     
-    return {"results": results}
+    # Returning faces_detected alongside results so the frontend won't crash
+    return {"faces_detected": len(results), "results": results}
