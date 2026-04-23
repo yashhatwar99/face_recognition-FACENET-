@@ -1,12 +1,15 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
+torch
 facenet-pytorch 
 opencv-python-headless 
 scikit-learn 
-pillow 
 numpy
+pandas
+pillow 
 fastapi
 uvicorn
 python-multipart
 mlflow
 prometheus-fastapi-instrumentator
+prometheus-client
 evidently
