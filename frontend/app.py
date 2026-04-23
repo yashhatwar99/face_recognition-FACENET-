@@ -15,11 +15,12 @@ if camera_image is not None:
         response = requests.post(SERVER_URL, files=files)
         if response.status_code == 200:
             data = response.json()
-            if data['faces_detected'] == 0:
+            results = data.get('results', []) 
+            if len(results) == 0:
                 st.warning("No faces detected.")
             else:
-                st.success(f"Detected {data['faces_detected']} face(s):")
-                for face in data.get('results', []):
+                st.success(f"Detected {len(results)} face(s):")
+                for face in results:
                     st.write(f"**Name:** {face['name']} | **Confidence:** {face['confidence']:.4f}")
         else:
             st.error(f"Server error: {response.status_code}")
