@@ -27,12 +27,12 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
 
-    - name: Deploy to Azure
+    - name: Deploy to AWS
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.AZURE_HOST }}
-        username: ${{ secrets.AZURE_USER }}
-        key: ${{ secrets.AZURE_KEY }}
+        host: ${{ secrets.AWS_HOST }}
+        username: ${{ secrets.AWS_USER }}
+        key: ${{ secrets.AWS_KEY }}
         script: |
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
           docker stop face-api || true
