@@ -2,11 +2,11 @@ name: Retrain Face Model
 
 on:
   push:
-    branches: [ main,test_branch ]
+    branches: [ main, test_branch ]
     paths:
       - 'model_testing/**'
       - 'dataset.dvc'
-  workflow_dispatch: # Allows you to manually trigger a retraining from the GitHub UI
+  workflow_dispatch:
 
 jobs:
   train-and-update:
@@ -25,7 +25,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        # We still need Azure here because your dataset is stored in Azure!
         pip install "dvc[azure]" 
 
     - name: Pull Dataset from Azure via DVC
@@ -43,8 +42,12 @@ jobs:
     - name: Train Production Model
       run: python model_testing/train_model.py
 
-    - name: Upload Model Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: trained-face-model
-        path: face_model.pkl
+    - name: Upload Model to Azure Storage
+      run: |
+        az storage blob upload \
+          --account-name harsh23 \
+          --account-key "${{ secrets.AZURE_STORAGE_KEY }}" \
+          --container-name mlops-dataset \
+          --file face_model.pkl \
+          --name face_model.pkl \
+          --overwrite

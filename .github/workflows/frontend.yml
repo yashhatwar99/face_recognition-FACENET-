@@ -33,7 +33,7 @@ jobs:
         username: ${{ secrets.AWS_USER }}
         key: ${{ secrets.AWS_KEY }}
         script: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest
-          docker stop face-frontend || true
-          docker rm face-frontend || true
-          docker run -d --name face-frontend -p 8501:8501 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest
+          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest
+          sudo docker stop face-frontend || true
+          sudo docker rm face-frontend || true
+          sudo docker run -d --name face-frontend -p 8501:8501 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-frontend:latest

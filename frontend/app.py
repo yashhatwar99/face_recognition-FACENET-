@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # Point to the FastAPI server
-SERVER_URL = "http://face-api:3000/predict"
+SERVER_URL = "http://localhost:3000/predict"
 
 st.title("Face Recognition Client")
 st.write("Take a photo to send to the server for prediction.")
@@ -25,4 +25,3 @@ if camera_image is not None:
             st.error(f"Server error: {response.status_code}")
     except requests.exceptions.RequestException:
         st.error("Connection failed. Is the server running?")
-        
