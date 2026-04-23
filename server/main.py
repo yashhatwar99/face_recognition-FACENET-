@@ -1,11 +1,18 @@
-import cv2
-import numpy as np
+# 1. MUST IMPORT TORCH FIRST
 import torch
+torch.set_num_threads(1) # Force PyTorch to use 1 safe thread
+
+# 2. MUST IMPORT OPENCV SECOND
+import cv2
+cv2.setNumThreads(0) # Force OpenCV to stop fighting PyTorch for threads
+
+# 3. Import everything else
+from fastapi import FastAPI, UploadFile, File
+import numpy as np
 import pickle
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from facenet_pytorch import InceptionResnetV1, MTCNN
-from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from evidently.report import Report
 from evidently.metrics import EmbeddingsDriftMetric
@@ -27,8 +34,9 @@ REFERENCE_DATA = np.load("embeddings.npy") # Your 80-celeb baseline
 mtcnn = MTCNN(keep_all=True)
 facenet = InceptionResnetV1(pretrained='vggface2').eval()
 try:
+    # Use Exception here just in case the fallback file causes a different error
     model = pickle.load(open("face_model.pkl", "rb"))
-except FileNotFoundError:
+except Exception:
     model = None
 
 # 2. Background function to calculate drift
@@ -52,7 +60,8 @@ def calculate_drift():
     print(f"Prometheus Gauge Updated: {score}")
 
 @app.post("/predict")
-async def predict_face(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def predict_face(file: UploadFile = File(...)):
+# ... (KEEP THE REST OF YOUR PREDICT FUNCTION EXACTLY THE SAME) ...
     if model is None:
         return {"error": "SVM model not trained yet."}
 

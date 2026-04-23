@@ -1,0 +1,58 @@
+name: Deploy Server
+
+on:
+  push:
+    branches: [ main, test_branch ]
+    paths:
+      - 'server/**'
+      - 'Dockerfile.server'
+      - 'requirements.txt'
+      
+  workflow_run:
+    workflows: ["Retrain Face Model"]
+    types:
+      - completed
+
+jobs:
+  build-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Download Model from Azure Storage
+      run: |
+        az storage blob download \
+          --account-name harsh23 \
+          --account-key "${{ secrets.AZURE_STORAGE_KEY }}" \
+          --container-name mlops-dataset \
+          --name face_model.pkl \
+          --file face_model.pkl || touch face_model.pkl
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: Dockerfile.server
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
+
+    - name: Deploy to AWS EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.AWS_HOST }}
+        username: ${{ secrets.AWS_USER }}
+        key: ${{ secrets.AWS_KEY }}
+        script: |
+          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
+          sudo docker stop face-api || true
+          sudo docker rm face-api || true
+          sudo docker run -d --name face-api -p 3000:3000 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
