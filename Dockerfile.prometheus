@@ -1,0 +1,10 @@
+FROM prom/prometheus:latest
+
+# Copy your config into the default Prometheus path
+COPY prometheus.yml /etc/prometheus/prometheus.yml
+
+# Ensure the container runs as root to avoid permission issues with the config
+USER root
+
+# Expose the Prometheus port
+EXPOSE 9090

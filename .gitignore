@@ -14,5 +14,5 @@ mlruns/
 mlruns
 mlflow.db
 aws_ssh.sh
-
+.dvc/config.local
 model_testing/mlflow.db
