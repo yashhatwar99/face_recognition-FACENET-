@@ -9,3 +9,4 @@ uvicorn
 python-multipart
 mlflow
 prometheus-fastapi-instrumentator
+evidently

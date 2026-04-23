@@ -3,24 +3,20 @@ import mlflow.sklearn
 import numpy as np
 import pickle # <--- ADD THIS IMPORT
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
 
-# 1. Set the experiment
 mlflow.set_experiment("Face_Recognition_Model")
 
-# 2. Load the data
 X = np.load("embeddings.npy")
 y = np.load("labels.npy")
 
-# 3. Start the MLflow run
-with mlflow.start_run(run_name="Dataset2_training"):
-    
-    # Log the parameters
-    mlflow.log_param("dataset", "dataset2")
-    mlflow.log_param("kernel", "linear")
-    mlflow.log_param("probability", True)
-    
-    # Train the model
+with mlflow.start_run(run_name="lets see data drit just for aamir khan"):
+    # 1. Log Parameters
+    mlflow.log_param("dataset_size", len(y))
+    mlflow.log_param("num_classes", len(np.unique(y)))
+
+    # 2. Track Training Time
+    start_train = time.time()
     model = SVC(kernel='linear', probability=True)
     model.fit(X, y)
     

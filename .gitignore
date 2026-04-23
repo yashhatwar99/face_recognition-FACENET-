@@ -11,6 +11,8 @@ repomix-output.xml
 dataset_bollywood/
 dataset_bollywood
 mlruns/
+mlruns
 mlflow.db
 aws_ssh.sh
 
+model_testing/mlflow.db
