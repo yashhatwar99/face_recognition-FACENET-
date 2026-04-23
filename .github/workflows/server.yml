@@ -48,14 +48,15 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
 
-    - name: Deploy to Azure VM
+    # UPDATED: Now deploying to AWS EC2 using AWS secrets
+    - name: Deploy to AWS EC2
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.AZURE_HOST }}
-        username: ${{ secrets.AZURE_USER }}
-        key: ${{ secrets.AZURE_KEY }}
+        host: ${{ secrets.AWS_HOST }}
+        username: ${{ secrets.AWS_USER }}
+        key: ${{ secrets.AWS_KEY }}
         script: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
-          docker stop face-api || true
-          docker rm face-api || true
-          docker run -d --name face-api -p 3000:3000 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
+          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
+          sudo docker stop face-api || true
+          sudo docker rm face-api || true
+          sudo docker run -d --name face-api -p 3000:3000 --network host ${{ secrets.DOCKERHUB_USERNAME }}/face-api:latest
