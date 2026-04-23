@@ -9,4 +9,3 @@ uvicorn
 python-multipart
 mlflow
 prometheus-fastapi-instrumentator
-evidently>=0.4.0
