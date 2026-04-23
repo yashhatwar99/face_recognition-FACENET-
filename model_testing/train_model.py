@@ -1,7 +1,8 @@
 import mlflow
 import mlflow.sklearn
 import numpy as np
-import pickle # <--- ADD THIS IMPORT
+import pickle 
+import time
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report
 

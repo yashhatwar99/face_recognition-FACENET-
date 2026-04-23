@@ -126,7 +126,7 @@ async def predict_face(
             max_prob = np.max(probs)
             
             # Reverted threshold to 0.2
-            name = model.predict(embedding)[0] if max_prob >= 0.2 else "Unknown"
+            name = model.predict(embedding)[0] if max_prob >= 0.15 else "Unknown"
 
             if not results: 
                 primary_prediction = name
