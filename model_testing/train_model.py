@@ -1,6 +1,7 @@
 import mlflow
 import mlflow.sklearn
 import numpy as np
+import pickle # <--- ADD THIS IMPORT
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
@@ -27,14 +28,19 @@ with mlflow.start_run(run_name="Dataset2_training"):
     y_pred = model.predict(X)
     acc = accuracy_score(y, y_pred)
     
-    # 4. LOG THE METRIC (This fixes the blank UI!)
+    # 4. LOG THE METRIC
     mlflow.log_metric("accuracy", acc)
 
-    # 5. Log the trained model and register it as the latest version
+    # 5. Log the trained model to MLflow
     mlflow.sklearn.log_model(
         sk_model=model, 
         artifact_path="face_recognition_model",
         registered_model_name="Production_Face_Classifier"
     )
+    
+    # --- NEW: SAVE THE MODEL LOCALLY FOR GITHUB ACTIONS ---
+    with open("face_model.pkl", "wb") as f:
+        pickle.dump(model, f)
+    # ------------------------------------------------------
     
     print(f"Model trained with an accuracy of {acc:.4f} and logged to MLflow Registry!")
