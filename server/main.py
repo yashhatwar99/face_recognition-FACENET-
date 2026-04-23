@@ -7,21 +7,17 @@ import cv2
 cv2.setNumThreads(0) # Force OpenCV to stop fighting PyTorch for threads
 
 # 3. Import everything else
-from fastapi import FastAPI, UploadFile, File
 import numpy as np
 import pickle
-import pandas as pd
 from fastapi import FastAPI, UploadFile, File, BackgroundTasks
 from facenet_pytorch import InceptionResnetV1, MTCNN
 from prometheus_fastapi_instrumentator import Instrumentator
-from evidently.report import Report
-from evidently.metrics import EmbeddingsDriftMetric
 from prometheus_client import Gauge
 
 # 1. Define the Prometheus Gauge
 DRIFT_SCORE_GAUGE = Gauge(
     "model_data_drift_score", 
-    "Statistical drift score between training and production embeddings"
+    "Cosine distance drift score between training and production embeddings"
 )
 
 app = FastAPI(title="Face Recognition API")
@@ -29,40 +25,61 @@ Instrumentator().instrument(app).expose(app)
 
 # Global list to store live embeddings for drift calculation
 live_embeddings_cache = []
-REFERENCE_DATA = np.load("embeddings.npy") # Your 80-celeb baseline
+
+try:
+    REFERENCE_DATA = np.load("embeddings.npy") # Your 80-celeb baseline
+    # Pre-calculate the reference centroid (mean vector) to save CPU later
+    REF_CENTROID = np.mean(REFERENCE_DATA, axis=0) if len(REFERENCE_DATA) > 0 else None
+except Exception:
+    REFERENCE_DATA = np.array([])
+    REF_CENTROID = None
 
 # Load models
 mtcnn = MTCNN(keep_all=True)
 facenet = InceptionResnetV1(pretrained='vggface2').eval()
 try:
-    # Use Exception here just in case the fallback file causes a different error
     model = pickle.load(open("face_model.pkl", "rb"))
 except Exception:
     model = None
 
-# 2. Background function to calculate drift
+# 2. Background function to calculate drift using Numpy (Cosine Distance)
 def calculate_drift():
     global live_embeddings_cache
-    if len(live_embeddings_cache) < 10: # Wait for enough data
+    
+    # Wait for enough data and ensure we have reference data to compare against
+    if len(live_embeddings_cache) < 10 or REF_CENTROID is None: 
         return
     
-    ref_df = pd.DataFrame(REFERENCE_DATA)
-    curr_df = pd.DataFrame(live_embeddings_cache)
-    
-    drift_report = Report(metrics=[EmbeddingsDriftMetric('face_embeddings')])
-    # Map the 128 dimensions of the FaceNet embedding
-    column_mapping = {"embeddings": {"face_embeddings": list(range(128))}}
-    
-    drift_report.run(reference_data=ref_df, current_data=curr_df, column_mapping=column_mapping)
-    
-    # Update Prometheus
-    score = drift_report.as_dict()['metrics'][0]['result']['drift_score']
-    DRIFT_SCORE_GAUGE.set(score)
-    print(f"Prometheus Gauge Updated: {score}")
+    try:
+        # Convert live cache to numpy array
+        curr_arr = np.array(live_embeddings_cache)
+        
+        # Calculate the centroid (mean vector) of the live production faces
+        curr_centroid = np.mean(curr_arr, axis=0)
+        
+        # Calculate Cosine Similarity: dot(A, B) / (norm(A) * norm(B))
+        cos_sim = np.dot(REF_CENTROID, curr_centroid) / (np.linalg.norm(REF_CENTROID) * np.linalg.norm(curr_centroid))
+        
+        # Convert similarity to distance (0 means identical distributions, higher means drift)
+        drift_score = 1.0 - cos_sim
+        
+        # Update Prometheus
+        DRIFT_SCORE_GAUGE.set(float(drift_score))
+        print(f"Prometheus Gauge Updated (Cosine Distance): {drift_score:.4f}")
+
+        # Optional: Prevent the cache from eating all your server RAM over time
+        if len(live_embeddings_cache) > 1000:
+            # Keep only the 500 most recent faces
+            live_embeddings_cache = live_embeddings_cache[-500:]
+
+    except Exception as e:
+        print(f"Error calculating drift: {e}")
 
 @app.post("/predict")
-async def predict_face(file: UploadFile = File(...),background_tasks: BackgroundTasks = BackgroundTasks()):
-# ... (KEEP THE REST OF YOUR PREDICT FUNCTION EXACTLY THE SAME) ...
+async def predict_face(
+    background_tasks: BackgroundTasks, 
+    file: UploadFile = File(...)
+):
     if model is None:
         return {"error": "SVM model not trained yet."}
 
@@ -77,7 +94,12 @@ async def predict_face(file: UploadFile = File(...),background_tasks: Background
     if boxes is not None:
         for box in boxes:
             x1, y1, x2, y2 = map(int, box)
-            # ... (your existing boundary check code) ...
+            
+            # Boundary checks
+            h, w, _ = rgb.shape
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(w, x2), min(h, y2)
+            
             face = rgb[y1:y2, x1:x2]
             if face.size == 0: continue
 
