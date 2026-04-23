@@ -15,7 +15,6 @@ Instrumentator().instrument(app).expose(app)
 # Load models once when the server starts
 mtcnn = MTCNN(keep_all=True)
 facenet = InceptionResnetV1(pretrained='vggface2').eval()
-
 try:
     model = pickle.load(open("face_model.pkl", "rb"))
 except FileNotFoundError:
