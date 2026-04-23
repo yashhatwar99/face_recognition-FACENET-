@@ -2,20 +2,18 @@ name: Retrain Face Model
 
 on:
   push:
-    branches: [ main,test_branch ]
+    branches: [ main ]
     paths:
       - 'model_testing/**'
       - 'dataset.dvc'
-  workflow_dispatch: # Allows manual trigger for Azure Storage data updates
+  workflow_dispatch: # Allows you to manually click "Run" in GitHub
 
 jobs:
   train-and-update:
     runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -28,32 +26,23 @@ jobs:
         pip install -r requirements.txt
         pip install "dvc[azure]"
 
-    - name: Pull Dataset
+    - name: Pull Dataset from Azure via DVC
       run: |
         dvc remote modify --local myremote account_name "harsh23"
         dvc remote modify --local myremote account_key "${{ secrets.AZURE_STORAGE_KEY }}"
         dvc pull
   
-    - name: Extract & Train
-      run: |
-        python model_testing/extract_embeddings.py
-        python model_testing/eval.py
-        python model_testing/train_model.py
+    - name: Extract Facial Embeddings
+      run: python model_testing/extract_embeddings.py
 
-    - name: Upload New Model
+    - name: Run Evaluation
+      run: python model_testing/eval.py
+
+    - name: Train Production Model
+      run: python model_testing/train_model.py
+
+    - name: Upload Model Artifact
       uses: actions/upload-artifact@v4
       with:
         name: trained-face-model
         path: face_model.pkl
-
-    # Automatically trigger the Server deployment to pick up the new model
-    - name: Trigger Server Deployment
-      uses: actions/github-script@v6
-      with:
-        script: |
-          github.rest.actions.createWorkflowDispatch({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            workflow_id: 'server.yml',
-            ref: 'main',
-          })
