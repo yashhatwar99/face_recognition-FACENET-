@@ -56,7 +56,7 @@ while True:
                 name = "Unknown"
                 if model is not None and not is_capturing:
                     probs = model.predict_proba([current_embedding])
-                    if np.max(probs) > 0.7:
+                    if np.max(probs) > 0.2:
                         name = model.predict([current_embedding])[0]
 
                 # Visual Feedback
