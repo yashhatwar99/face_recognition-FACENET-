@@ -9,6 +9,7 @@ st.write("Take a photo to send to the server for prediction.")
 
 camera_image = st.camera_input("Camera Feed")
 
+
 if camera_image is not None:
     files = {'file': ('frame.jpg', camera_image.getvalue(), 'image/jpeg')}
     try:
