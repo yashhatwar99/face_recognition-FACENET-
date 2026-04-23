@@ -2,7 +2,7 @@ name: Retrain Face Model
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main,test_branch ]
     paths:
       - 'model_testing/**'
       - 'dataset.dvc'

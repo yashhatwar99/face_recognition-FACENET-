@@ -10,6 +10,7 @@ mlflow.set_experiment("Face_Recognition_Model")
 X = np.load("embeddings.npy")
 y = np.load("labels.npy")
 
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 

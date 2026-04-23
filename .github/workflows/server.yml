@@ -3,7 +3,7 @@ name: Deploy Server
 on:
   # Trigger 1: When you edit the server code directly
   push:
-    branches: [ main ]
+    branches: [ main,test_branch ]
     paths:
       - 'server/**'
       - 'Dockerfile.server'
