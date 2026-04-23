@@ -21,7 +21,6 @@ with mlflow.start_run(run_name="lets see data drit just for aamir khan"):
     model = SVC(kernel='linear', probability=True)
     model.fit(X, y)
     
-    
     # Calculate accuracy on the dataset
     y_pred = model.predict(X)
     acc = accuracy_score(y, y_pred)
