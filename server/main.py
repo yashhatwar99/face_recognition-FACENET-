@@ -20,6 +20,7 @@ try:
     model = pickle.load(open("face_model.pkl", "rb"))
 except FileNotFoundError:
     model = None
+    
 
 @app.post("/predict")
 async def predict_face(file: UploadFile = File(...)):

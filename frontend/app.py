@@ -25,3 +25,4 @@ if camera_image is not None:
             st.error(f"Server error: {response.status_code}")
     except requests.exceptions.RequestException:
         st.error("Connection failed. Is the server running?")
+        
