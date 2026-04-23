@@ -66,6 +66,7 @@ async def predict_face(file: UploadFile = File(...),background_tasks: Background
     if model is None:
         return {"error": "SVM model not trained yet."}
 
+
     contents = await file.read()
     nparr = np.frombuffer(contents, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
